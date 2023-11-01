@@ -1,0 +1,207 @@
+﻿// Add the inline mention to the message
+                    tagMessage += $"[{user.FirstName}](tg://user?id={user.Id}) ";
+                    Console.WriteLine(user.Id);
+
+                    else if (message.Type == MessageType.Text && message.Text == "تگ" || message.Text == "Tag")
+
+            {
+                // Assume you have the last message id and the chat id
+                int lastMessageId = message.MessageId;
+                long chatId = message.Chat.Id;
+
+                // Create a HashSet to store the user ids
+                HashSet<long> userIds = new HashSet<long>();
+
+                // Create a List of User objects
+                List<Telegram.Bot.Types.ChatMember> users = new List<Telegram.Bot.Types.ChatMember>();
+
+                // Create a variable to store the number of requests per minute
+                int requests = 0;
+
+                // Get the number of members in the chat
+                int memberCount = await botClient.GetChatMembersCountAsync(chatId);
+
+                // Print the number of members to the console
+                Console.WriteLine($"The chat has {memberCount} members");
+
+                if (message.Chat.Id < 0)
+                {
+                    // Get the list of admins in the chat
+                    IReadOnlyList<Telegram.Bot.Types.ChatMember> admins = await botClient.GetChatAdministratorsAsync(chatId);
+
+                    // Loop through the admins
+                    foreach (Telegram.Bot.Types.ChatMember admin in admins)
+                    {
+                        if (!admin.User.IsBot)
+                        {
+                            // Get the user id of the admin
+                            long adminId = admin.User.Id;
+
+                            // Add the admin id to the HashSet
+                            userIds.Add(adminId);
+
+                            // Print the admin id to the console
+                            Console.WriteLine($"The admin id is {adminId}");
+                        }
+                    }
+                }
+                int messageId = 1;
+                int nonBotUsers = memberCount;
+                Telegram.Bot.Types.Message newmessage = new Telegram.Bot.Types.Message { };
+                newmessage.Chat = message.Chat;
+                newmessage.MessageId = messageId--;
+                Console.WriteLine(newmessage.Chat.Title);
+                Console.WriteLine(newmessage.Text);
+                // Create a while loop to iterate over the message ids until all members are found or an invalid message id is reached
+                //while (userIds.Count < nonBotUsers && messageId > 0)
+                //{
+                //    // Decrease the message id by 1
+                //    newmessage.MessageId = lastMessageId--;
+                //    messageId = newmessage.MessageId;
+
+                //    // Check if the number of requests is less than 1000
+                //    if (requests < 15000)
+                //    {
+                //        // Try to get the message from the chat
+                //        try
+                //        {
+                //            // Check if the message is a text message
+                //            if (newmessage.Text != null)
+                //            {
+                //                // Get the user id from the message sender
+                //                long userId = newmessage.From.Id;
+
+                //                if (!(newmessage.From.IsBot) && !userIds.Contains(userId))
+                //                {
+                //                    // Add the user id to the HashSet
+                //                    userIds.Add(userId);
+                //                }
+                //                else
+                //                {
+                //                    nonBotUsers = nonBotUsers--;
+                //                    Console.WriteLine($"{newmessage.From.Username} is a bot");
+                //                }
+                //                // Print some information to the console
+                //                Console.WriteLine($"Found a text message from {userId} with id {messageId}");
+                //                Console.WriteLine($"Message: {newmessage.Text}");
+                //            }
+                //            else
+                //            {
+                //                // Print a warning to the console
+                //                Console.WriteLine($"The message with id {messageId} is not a text message");
+                //            }
+
+                //            // Increase the number of requests by 1
+                //            requests++;
+                //        }
+                //        catch (Exception ex)
+                //        {
+                //            // Print an error to the console
+                //            Console.WriteLine($"Failed to get the message with id {messageId}");
+                //            Console.WriteLine($"Exception: {ex.Message}");
+
+                //            // Break the loop if the message id is invalid or does not exist
+                //            break;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        // Print a message to the console
+                //        Console.WriteLine($"Reached the limit of 1000 requests . Waiting for 10 seconds...");
+
+                //        // Wait for 10 seconds before sending more requests
+                //        await Task.Delay(10000);
+
+                //        // Reset the number of requests to 0
+                //        requests = 0;
+                //    }
+                //}
+
+                // Print the number of unique user ids found in the chat
+                Console.WriteLine($"Found {userIds.Count} unique user ids in the chat");
+                // Create a variable to store your message
+                string tagMessage = "Attention: ";
+
+                // Loop through the users list
+                foreach (long userId in userIds)
+                {
+                Telegram.Bot.Types.ChatMember user = new Telegram.Bot.Types.ChatMember();
+                    user = await botClient.GetChatMemberAsync(chatId, userId);
+                    users.Add(user);
+                }
+
+                // Send the message using bot client and Markdown mode
+                await botClient.SendTextMessageAsync(chatId, tagMessage, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+                //Write the user ids to a text file
+                using (StreamWriter writer = new StreamWriter($"{message.Chat.Title}'s user_ids.txt"))
+                {
+                    foreach (Telegram.Bot.Types.ChatMember user in users)
+                    {
+                        writer.WriteLine(user.User.Id);
+                    }
+                }
+
+                // Print a message to the console
+                Console.WriteLine($"Saved the user ids to user_ids.txt");
+
+                // Create a string builder to store the mentions
+                var sb = new StringBuilder();
+
+                // Loop through the members
+                foreach (Telegram.Bot.Types.ChatMember user in users)
+                {
+                    // Mention them using tg://user?id=123456789
+                    sb.Append($"[{user.User.FirstName}](tg://user?id={user.User.Id}) ");
+                }
+                // Reply to the message with "hello"
+                await botClient.SendTextMessageAsync(
+                        chatId: message.Chat,
+                        text: $"Hello {sb}",
+                        replyToMessageId: message.MessageId,
+                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown
+                    );
+            }
+
+
+
+
+
+
+
+             var text = "Damn it!";
+            text = message.Text;
+            var api_url = $"https://api.api-ninjas.com/v1/profanityfilter?text={text}";
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Api-Key", "5S51EcmwdfYcvG9ivTCh9w==fOSEypC4YpqFRggE");
+            var response = await client.GetAsync(api_url);
+            Console.WriteLine();
+            if (response.IsSuccessStatusCode)
+            {
+                string edited = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                await botClient.EditMessageTextAsync(message.Chat.Id, message.MessageId, "hi");
+            }
+            else
+            {
+                Console.WriteLine("Error: {0}", response.StatusCode);
+            }
+
+
+
+
+
+
+            var word = "code";
+            word = message.Text.ToLower();
+            var api_url = $"https://api.api-ninjas.com/v1/dictionary?word={word}";
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Api-Key", "5S51EcmwdfYcvG9ivTCh9w==fOSEypC4YpqFRggE");
+            var responsee = await client.GetAsync(api_url);
+            if (responsee.IsSuccessStatusCode)
+            {
+                Console.WriteLine(await responsee.Content.ReadAsStringAsync());
+            }
+            else
+            {
+                Console.WriteLine("Error: {0}", responsee.StatusCode);
+            }
