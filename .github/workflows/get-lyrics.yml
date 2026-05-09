@@ -1,0 +1,70 @@
+name: Get Song Lyrics (No Token Required)
+
+on:
+  workflow_dispatch:
+    inputs:
+      song_query:
+        description: 'Song title or "Artist Name - Song Title"'
+        required: true
+        type: string
+        default: 'Bohemian Rhapsody'
+
+jobs:
+  scrape-lyrics:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install genius-lyrics-parser
+        run: npm install genius-lyrics-parser
+      
+      - name: Fetch and display lyrics
+        run: |
+          node -e "
+          const getLyrics = require('genius-lyrics-parser');
+          
+          const songQuery = '${{ github.event.inputs.song_query }}';
+          console.log(`Searching for: ${songQuery}\n`);
+          
+          getLyrics(songQuery)
+            .then(lyrics => {
+              console.log('--- LYRICS ---\n');
+              console.log(lyrics);
+              console.log('\n--- END OF LYRICS ---');
+            })
+            .catch(err => {
+              console.error('Error:', err.message);
+              console.log('Try using format: \"Song Title\" or \"Artist - Song Title\"');
+            });
+          "
+      
+      - name: Save lyrics to file (optional)
+        run: |
+          node -e "
+          const getLyrics = require('genius-lyrics-parser');
+          const fs = require('fs');
+          
+          const songQuery = '${{ github.event.inputs.song_query }}';
+          const filename = songQuery.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_lyrics.txt';
+          
+          getLyrics(songQuery)
+            .then(lyrics => {
+              fs.writeFileSync(filename, lyrics);
+              console.log(`✓ Lyrics saved to ${filename}`);
+            })
+            .catch(err => console.log('Could not save file:', err.message));
+          "
+      
+      - name: Upload lyrics as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyrics
+          path: '*_lyrics.txt'
+          if-no-files-found: ignore
